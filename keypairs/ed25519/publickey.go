@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 
 	"github.com/block-vision/sui-go-sdk/constant"
+	"github.com/block-vision/sui-go-sdk/models"
 )
 
 type Ed25519PublicKey struct {
@@ -26,16 +27,17 @@ func (e *Ed25519PublicKey) ToSuiAddress() string {
 	return ""
 }
 
-func (e *Ed25519PublicKey) VerifyPersonalMessage(message []byte, signature []byte, client *graphql.Client) (bool, error) {
-	b64Message := base64.StdEncoding.EncodeToString([]byte(message))
-	return VerifyMessage(b64Message, signature, constant.PersonalMessageIntentScope)
+func (e *Ed25519PublicKey) VerifyPersonalMessage(message []byte, signature []byte, client *graphql.Client) (string, bool, error) {
+	b64Message := base64.StdEncoding.EncodeToString(message)
+	b64Signature := base64.StdEncoding.EncodeToString(signature)
+	return VerifyMessage(b64Message, b64Signature, constant.PersonalMessageIntentScope)
 }
 
 func VerifyMessage(message, signature string, scope constant.IntentScope) (signer string, pass bool, err error) {
 	b64Bytes, _ := base64.StdEncoding.DecodeString(message)
-	messageBytes := NewMessageWithIntent(b64Bytes, scope)
+	messageBytes := models.NewMessageWithIntent(b64Bytes, scope)
 
-	serializedSignature, err := FromSerializedSignature(signature)
+	serializedSignature, err := models.FromSerializedSignature(signature)
 	if err != nil {
 		return "", false, err
 	}
@@ -52,7 +54,7 @@ func VerifyMessage(message, signature string, scope constant.IntentScope) (signe
 }
 
 func Ed25519PublicKeyToSuiAddress(pubKey []byte) string {
-	newPubkey := []byte{byte(SigFlagEd25519)}
+	newPubkey := []byte{byte(models.SigFlagEd25519)}
 	newPubkey = append(newPubkey, pubKey...)
 
 	addrBytes := blake2b.Sum256(newPubkey)
